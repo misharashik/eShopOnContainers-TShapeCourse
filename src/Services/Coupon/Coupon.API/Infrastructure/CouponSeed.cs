@@ -1,17 +1,17 @@
 ﻿namespace Coupon.API.Infrastructure
 {
-    using System.Collections.Generic;
-    using System.Threading.Tasks;
     using Coupon.API.Infrastructure.Models;
     using Coupon.API.Infrastructure.Repositories;
+    using System.Collections.Generic;
+    using System.Threading.Tasks;
 
     public class CouponSeed
     {
-        public async Task SeedAsync(CouponContext context)
+        public async Task SeedAsync(MongoDbContext context)
         {
             if (context.Coupons.EstimatedDocumentCount() == 0)
             {
-                var coupons = new List<Coupon>
+                List<Coupon> coupons = new List<Coupon>
                 {
                     new Coupon
                     {

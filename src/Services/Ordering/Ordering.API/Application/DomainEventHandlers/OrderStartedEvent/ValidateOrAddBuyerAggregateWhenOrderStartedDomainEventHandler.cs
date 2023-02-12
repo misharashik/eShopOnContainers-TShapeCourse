@@ -1,4 +1,6 @@
-﻿namespace Microsoft.eShopOnContainers.Services.Ordering.API.Application.DomainEventHandlers.OrderStartedEvent;
+﻿using Microsoft.eShopOnContainers.Domain.Common.IntegrationEvents;
+
+namespace Microsoft.eShopOnContainers.Services.Ordering.API.Application.DomainEventHandlers.OrderStartedEvent;
 
 public class ValidateOrAddBuyerAggregateWhenOrderStartedDomainEventHandler
                     : INotificationHandler<OrderStartedDomainEvent>
@@ -22,8 +24,8 @@ public class ValidateOrAddBuyerAggregateWhenOrderStartedDomainEventHandler
 
     public async Task Handle(OrderStartedDomainEvent orderStartedEvent, CancellationToken cancellationToken)
     {
-        var cardTypeId = (orderStartedEvent.CardTypeId != 0) ? orderStartedEvent.CardTypeId : 1;
-        var buyer = await _buyerRepository.FindAsync(orderStartedEvent.UserId);
+        int cardTypeId = (orderStartedEvent.CardTypeId != 0) ? orderStartedEvent.CardTypeId : 1;
+        Buyer buyer = await _buyerRepository.FindAsync(orderStartedEvent.UserId);
         bool buyerOriginallyExisted = (buyer == null) ? false : true;
 
         if (!buyerOriginallyExisted)
@@ -39,14 +41,14 @@ public class ValidateOrAddBuyerAggregateWhenOrderStartedDomainEventHandler
                                         orderStartedEvent.CardExpiration,
                                         orderStartedEvent.Order.Id);
 
-        var buyerUpdated = buyerOriginallyExisted ?
+        Buyer buyerUpdated = buyerOriginallyExisted ?
             _buyerRepository.Update(buyer) :
             _buyerRepository.Add(buyer);
 
         await _buyerRepository.UnitOfWork
             .SaveEntitiesAsync(cancellationToken);
 
-        var orderStatusChangedToSubmittedIntegrationEvent = new OrderStatusChangedToSubmittedIntegrationEvent(orderStartedEvent.Order.Id, orderStartedEvent.Order.OrderStatus.Name, buyer.Name);
+        OrderStatusChangedToSubmittedIntegrationEvent orderStatusChangedToSubmittedIntegrationEvent = new OrderStatusChangedToSubmittedIntegrationEvent(orderStartedEvent.Order.Id, orderStartedEvent.Order.OrderStatus.Name, buyer.Name);
         await _orderingIntegrationEventService.AddAndSaveEventAsync(orderStatusChangedToSubmittedIntegrationEvent);
         _logger.CreateLogger<ValidateOrAddBuyerAggregateWhenOrderStartedDomainEventHandler>()
             .LogTrace("Buyer {BuyerId} and related payment method were validated or updated for orderId: {OrderId}.",

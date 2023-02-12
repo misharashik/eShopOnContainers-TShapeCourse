@@ -1,4 +1,6 @@
-﻿namespace Microsoft.eShopOnContainers.Services.Ordering.SignalrHub.AutofacModules;
+﻿using Microsoft.eShopOnContainers.Domain.Common.IntegrationEvents;
+
+namespace Microsoft.eShopOnContainers.Services.Ordering.SignalrHub.AutofacModules;
 
 public class ApplicationModule
     : Autofac.Module

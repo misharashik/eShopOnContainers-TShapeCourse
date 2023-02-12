@@ -1,5 +1,7 @@
-﻿namespace Microsoft.eShopOnContainers.Services.Ordering.API.Application.DomainEventHandlers.OrderGracePeriodConfirmed;
-    
+﻿using Microsoft.eShopOnContainers.Domain.Common.IntegrationEvents;
+
+namespace Microsoft.eShopOnContainers.Services.Ordering.API.Application.DomainEventHandlers.OrderGracePeriodConfirmed;
+
 public class OrderStatusChangedToAwaitingValidationDomainEventHandler
                 : INotificationHandler<OrderStatusChangedToAwaitingValidationDomainEvent>
 {
@@ -25,14 +27,14 @@ public class OrderStatusChangedToAwaitingValidationDomainEventHandler
             .LogTrace("Order with Id: {OrderId} has been successfully updated to status {Status} ({Id})",
                 orderStatusChangedToAwaitingValidationDomainEvent.OrderId, nameof(OrderStatus.AwaitingValidation), OrderStatus.AwaitingValidation.Id);
 
-        var order = await _orderRepository.GetAsync(orderStatusChangedToAwaitingValidationDomainEvent.OrderId);
+        Domain.AggregatesModel.OrderAggregate.Order order = await _orderRepository.GetAsync(orderStatusChangedToAwaitingValidationDomainEvent.OrderId);
 
-        var buyer = await _buyerRepository.FindByIdAsync(order.GetBuyerId.Value.ToString());
+        Buyer buyer = await _buyerRepository.FindByIdAsync(order.GetBuyerId.Value.ToString());
 
-        var orderStockList = orderStatusChangedToAwaitingValidationDomainEvent.OrderItems
+        IEnumerable<OrderStockItem> orderStockList = orderStatusChangedToAwaitingValidationDomainEvent.OrderItems
             .Select(orderItem => new OrderStockItem(orderItem.ProductId, orderItem.GetUnits()));
 
-        var orderStatusChangedToAwaitingValidationIntegrationEvent = new OrderStatusChangedToAwaitingValidationIntegrationEvent(
+        OrderStatusChangedToAwaitingValidationIntegrationEvent orderStatusChangedToAwaitingValidationIntegrationEvent = new OrderStatusChangedToAwaitingValidationIntegrationEvent(
             order.Id, order.OrderStatus.Name, buyer.Name, orderStockList);
         await _orderingIntegrationEventService.AddAndSaveEventAsync(orderStatusChangedToAwaitingValidationIntegrationEvent);
     }

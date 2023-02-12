@@ -1,5 +1,7 @@
-﻿namespace Microsoft.eShopOnContainers.Services.Ordering.API.Application.IntegrationEvents.EventHandling;
-   
+﻿using Microsoft.eShopOnContainers.Domain.Common.IntegrationEvents;
+
+namespace Microsoft.eShopOnContainers.Services.Ordering.API.Application.IntegrationEvents.EventHandling;
+
 public class OrderPaymentSucceededIntegrationEventHandler :
     IIntegrationEventHandler<OrderPaymentSucceededIntegrationEvent>
 {
@@ -20,7 +22,7 @@ public class OrderPaymentSucceededIntegrationEventHandler :
         {
             _logger.LogInformation("----- Handling integration event: {IntegrationEventId} at {AppName} - ({@IntegrationEvent})", @event.Id, Program.AppName, @event);
 
-            var command = new SetPaidOrderStatusCommand(@event.OrderId);
+            SetPaidOrderStatusCommand command = new SetPaidOrderStatusCommand(@event.OrderId);
 
             _logger.LogInformation(
                 "----- Sending command: {CommandName} - {IdProperty}: {CommandId} ({@Command})",

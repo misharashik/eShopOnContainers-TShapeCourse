@@ -1,4 +1,6 @@
-﻿namespace Microsoft.eShopOnContainers.Services.Ordering.SignalrHub.IntegrationEvents;
+﻿using Microsoft.eShopOnContainers.Domain.Common.IntegrationEvents;
+
+namespace Microsoft.eShopOnContainers.Services.Ordering.SignalrHub.IntegrationEvents;
 
 public class OrderStatusChangedToAwaitingValidationIntegrationEventHandler : IIntegrationEventHandler<OrderStatusChangedToAwaitingValidationIntegrationEvent>
 {

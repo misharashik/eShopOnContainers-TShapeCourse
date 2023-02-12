@@ -1,4 +1,6 @@
-﻿namespace Ordering.API.Application.IntegrationEvents.EventHandling;
+﻿using Microsoft.eShopOnContainers.Domain.Common.IntegrationEvents;
+
+namespace Ordering.API.Application.IntegrationEvents.EventHandling;
 
 public class OrderStockConfirmedIntegrationEventHandler :
     IIntegrationEventHandler<OrderStockConfirmedIntegrationEvent>
@@ -20,7 +22,7 @@ public class OrderStockConfirmedIntegrationEventHandler :
         {
             _logger.LogInformation("----- Handling integration event: {IntegrationEventId} at {AppName} - ({@IntegrationEvent})", @event.Id, Program.AppName, @event);
 
-            var command = new SetStockConfirmedOrderStatusCommand(@event.OrderId);
+            SetStockConfirmedOrderStatusCommand command = new SetStockConfirmedOrderStatusCommand(@event.OrderId);
 
             _logger.LogInformation(
                 "----- Sending command: {CommandName} - {IdProperty}: {CommandId} ({@Command})",

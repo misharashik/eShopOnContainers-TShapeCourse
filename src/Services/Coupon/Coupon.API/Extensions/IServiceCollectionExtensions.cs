@@ -26,7 +26,9 @@
     {
         public static IServiceCollection AddCouponRegister(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddTransient<ICouponRepository, CouponRepository>()
+            services
+                .AddTransient<ICouponRepository, CouponRepository>()
+                .AddTransient<ILoyaltyCardRepository, LoyaltyCardRepository>()
                 .AddTransient<IServiceBusPersisterConnection, DefaultServiceBusPersisterConnection>(service =>
                 {
                     ServiceBusConnectionStringBuilder connection = new ServiceBusConnectionStringBuilder(configuration["EventBusConnection"]);
@@ -51,7 +53,7 @@
                     return new DefaultRabbitMQPersistentConnection(factory, service.GetService<ILogger<DefaultRabbitMQPersistentConnection>>(), retryCount);
                 })
                 .AddTransient<IEventBusSubscriptionsManager, InMemoryEventBusSubscriptionsManager>()
-                .AddTransient<CouponContext>()
+                .AddTransient<MongoDbContext>()
                 .AddTransient<IMapper<CouponDto, Coupon>, Mapper>();
 
             return services;

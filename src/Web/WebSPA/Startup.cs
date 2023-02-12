@@ -11,7 +11,7 @@ public class Startup
 
     public Startup()
     {
-        var localPath = new Uri(Configuration["ASPNETCORE_URLS"])?.LocalPath ?? "/";
+        string localPath = new Uri(Configuration["ASPNETCORE_URLS"])?.LocalPath ?? "/";
         Configuration["BaseUrl"] = localPath;
     }
 
@@ -74,7 +74,7 @@ public class Startup
             {
                 // The request token has to be sent as a JavaScript-readable cookie, 
                 // and Angular uses it by default.
-                var tokens = antiforgery.GetAndStoreTokens(context);
+                AntiforgeryTokenSet tokens = antiforgery.GetAndStoreTokens(context);
                 context.Response.Cookies.Append("XSRF-TOKEN", tokens.RequestToken,
                     new CookieOptions() { HttpOnly = false });
             }
@@ -85,7 +85,7 @@ public class Startup
         //Seed Data
         WebContextSeed.Seed(app, env, loggerFactory);
 
-        var pathBase = Configuration["PATH_BASE"];
+        string pathBase = Configuration["PATH_BASE"];
 
         if (!string.IsNullOrEmpty(pathBase))
         {
@@ -124,10 +124,10 @@ public class Startup
             // see https://go.microsoft.com/fwlink/?linkid=864501
 
             // the root of the angular app. (Where the package.json lives)
-            spa.Options.SourcePath = "Client";
+            spa.Options.SourcePath = Path.Join("app", "Client");
 
             if (env.IsDevelopment())
-            { 
+            {
 
                 // use the SpaServices extension method for angular, that will make the application to run "ng serve" for us, when in development.
                 spa.UseAngularCliServer(npmScript: "start");

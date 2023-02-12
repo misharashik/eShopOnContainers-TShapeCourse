@@ -1,4 +1,3 @@
-using System.IO;
 using Autofac.Extensions.DependencyInjection;
 using Coupon.API.Extensions;
 using Coupon.API.Infrastructure;
@@ -8,20 +7,24 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Events;
+using System.IO;
 
 namespace Coupon.API
 {
     public class Program
     {
-        public static void Main(string[] args) =>
+        public static void Main(string[] args)
+        {
             CreateHostBuilder(args)
                 .Build()
-                .SeedDatabaseStrategy<CouponContext>(context => new CouponSeed().SeedAsync(context).Wait())
+                .SeedDatabaseStrategy<MongoDbContext>(context => new CouponSeed().SeedAsync(context).Wait())
                 .SubscribersIntegrationEvents()
                 .Run();
+        }
 
-        public static IHostBuilder CreateHostBuilder(string[] args) =>
-            Host.CreateDefaultBuilder(args)
+        public static IHostBuilder CreateHostBuilder(string[] args)
+        {
+            return Host.CreateDefaultBuilder(args)
                 .UseServiceProviderFactory(new AutofacServiceProviderFactory())
                 .ConfigureAppConfiguration((host, builder) =>
                 {
@@ -30,7 +33,7 @@ namespace Coupon.API
                         .AddJsonFile($"appsettings.{host.HostingEnvironment.EnvironmentName}.json", optional: false, reloadOnChange: true)
                         .AddEnvironmentVariables();
 
-                    var config = builder.Build();
+                    IConfigurationRoot config = builder.Build();
 
                     if (config.GetValue("UseVault", false))
                     {
@@ -49,5 +52,6 @@ namespace Coupon.API
                         .WriteTo.Http(string.IsNullOrWhiteSpace(host.Configuration["Serilog:LogstashUrl"]) ? "http://logstash:8080" : host.Configuration["Serilog:LogstashUrl"])
                         .ReadFrom.Configuration(host.Configuration);
                 });
+        }
     }
 }

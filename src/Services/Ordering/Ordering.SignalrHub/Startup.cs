@@ -1,3 +1,5 @@
+using Microsoft.eShopOnContainers.Domain.Common.IntegrationEvents;
+
 namespace Microsoft.eShopOnContainers.Services.Ordering.SignalrHub;
 
 public class Startup
@@ -40,9 +42,9 @@ public class Startup
         {
             services.AddSingleton<IServiceBusPersisterConnection>(sp =>
             {
-                var serviceBusConnectionString = Configuration["EventBusConnection"];
+                string serviceBusConnectionString = Configuration["EventBusConnection"];
 
-                var subscriptionClientName = Configuration["SubscriptionClientName"];
+                string subscriptionClientName = Configuration["SubscriptionClientName"];
 
                 return new DefaultServiceBusPersisterConnection(serviceBusConnectionString);
             });
@@ -51,10 +53,10 @@ public class Startup
         {
             services.AddSingleton<IRabbitMQPersistentConnection>(sp =>
             {
-                var logger = sp.GetRequiredService<ILogger<DefaultRabbitMQPersistentConnection>>();
+                ILogger<DefaultRabbitMQPersistentConnection> logger = sp.GetRequiredService<ILogger<DefaultRabbitMQPersistentConnection>>();
 
 
-                var factory = new ConnectionFactory()
+                ConnectionFactory factory = new ConnectionFactory()
                 {
                     HostName = Configuration["EventBusConnection"],
                     DispatchConsumersAsync = true
@@ -70,7 +72,7 @@ public class Startup
                     factory.Password = Configuration["EventBusPassword"];
                 }
 
-                var retryCount = 5;
+                int retryCount = 5;
                 if (!string.IsNullOrEmpty(Configuration["EventBusRetryCount"]))
                 {
                     retryCount = int.Parse(Configuration["EventBusRetryCount"]);
@@ -87,7 +89,7 @@ public class Startup
         services.AddOptions();
 
         //configure autofac
-        var container = new ContainerBuilder();
+        ContainerBuilder container = new ContainerBuilder();
         container.RegisterModule(new ApplicationModule());
         container.Populate(services);
 
@@ -102,7 +104,7 @@ public class Startup
         //loggerFactory.AddAzureWebAppDiagnostics();
         //loggerFactory.AddApplicationInsights(app.ApplicationServices, LogLevel.Trace);
 
-        var pathBase = Configuration["PATH_BASE"];
+        string pathBase = Configuration["PATH_BASE"];
 
         if (!string.IsNullOrEmpty(pathBase))
         {
@@ -134,11 +136,12 @@ public class Startup
 
     private void ConfigureEventBus(IApplicationBuilder app)
     {
-        var eventBus = app.ApplicationServices.GetRequiredService<IEventBus>();
+        IEventBus eventBus = app.ApplicationServices.GetRequiredService<IEventBus>();
 
         eventBus.Subscribe<OrderStatusChangedToAwaitingValidationIntegrationEvent, OrderStatusChangedToAwaitingValidationIntegrationEventHandler>();
         eventBus.Subscribe<OrderStatusChangedToPaidIntegrationEvent, OrderStatusChangedToPaidIntegrationEventHandler>();
         eventBus.Subscribe<OrderStatusChangedToStockConfirmedIntegrationEvent, OrderStatusChangedToStockConfirmedIntegrationEventHandler>();
+        eventBus.Subscribe<OrderStatusChangedToLoyaltyPointsProcessedIntegrationEvent, OrderStatusChangedToLoyaltyPointsProcessedEventHandler>();
         eventBus.Subscribe<OrderStatusChangedToShippedIntegrationEvent, OrderStatusChangedToShippedIntegrationEventHandler>();
         eventBus.Subscribe<OrderStatusChangedToCancelledIntegrationEvent, OrderStatusChangedToCancelledIntegrationEventHandler>();
         eventBus.Subscribe<OrderStatusChangedToSubmittedIntegrationEvent, OrderStatusChangedToSubmittedIntegrationEventHandler>();
@@ -149,7 +152,7 @@ public class Startup
         // prevent from mapping "sub" claim to nameidentifier.
         JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Remove("sub");
 
-        var identityUrl = Configuration.GetValue<string>("IdentityUrl");
+        string identityUrl = Configuration.GetValue<string>("IdentityUrl");
 
         services.AddAuthentication(options =>
         {
@@ -165,9 +168,9 @@ public class Startup
             {
                 OnMessageReceived = context =>
                 {
-                    var accessToken = context.Request.Query["access_token"];
+                    Extensions.Primitives.StringValues accessToken = context.Request.Query["access_token"];
 
-                    var path = context.HttpContext.Request.Path;
+                    AspNetCore.Http.PathString path = context.HttpContext.Request.Path;
                     if (!string.IsNullOrEmpty(accessToken) && (path.StartsWithSegments("/hub/notificationhub")))
                     {
                         context.Token = accessToken;
@@ -184,10 +187,10 @@ public class Startup
         {
             services.AddSingleton<IEventBus, EventBusServiceBus>(sp =>
             {
-                var serviceBusPersisterConnection = sp.GetRequiredService<IServiceBusPersisterConnection>();
-                var iLifetimeScope = sp.GetRequiredService<ILifetimeScope>();
-                var logger = sp.GetRequiredService<ILogger<EventBusServiceBus>>();
-                var eventBusSubcriptionsManager = sp.GetRequiredService<IEventBusSubscriptionsManager>();
+                IServiceBusPersisterConnection serviceBusPersisterConnection = sp.GetRequiredService<IServiceBusPersisterConnection>();
+                ILifetimeScope iLifetimeScope = sp.GetRequiredService<ILifetimeScope>();
+                ILogger<EventBusServiceBus> logger = sp.GetRequiredService<ILogger<EventBusServiceBus>>();
+                IEventBusSubscriptionsManager eventBusSubcriptionsManager = sp.GetRequiredService<IEventBusSubscriptionsManager>();
                 string subscriptionName = Configuration["SubscriptionClientName"];
 
                 return new EventBusServiceBus(serviceBusPersisterConnection, logger,
@@ -198,13 +201,13 @@ public class Startup
         {
             services.AddSingleton<IEventBus, EventBusRabbitMQ>(sp =>
             {
-                var subscriptionClientName = Configuration["SubscriptionClientName"];
-                var rabbitMQPersistentConnection = sp.GetRequiredService<IRabbitMQPersistentConnection>();
-                var iLifetimeScope = sp.GetRequiredService<ILifetimeScope>();
-                var logger = sp.GetRequiredService<ILogger<EventBusRabbitMQ>>();
-                var eventBusSubcriptionsManager = sp.GetRequiredService<IEventBusSubscriptionsManager>();
+                string subscriptionClientName = Configuration["SubscriptionClientName"];
+                IRabbitMQPersistentConnection rabbitMQPersistentConnection = sp.GetRequiredService<IRabbitMQPersistentConnection>();
+                ILifetimeScope iLifetimeScope = sp.GetRequiredService<ILifetimeScope>();
+                ILogger<EventBusRabbitMQ> logger = sp.GetRequiredService<ILogger<EventBusRabbitMQ>>();
+                IEventBusSubscriptionsManager eventBusSubcriptionsManager = sp.GetRequiredService<IEventBusSubscriptionsManager>();
 
-                var retryCount = 5;
+                int retryCount = 5;
                 if (!string.IsNullOrEmpty(Configuration["EventBusRetryCount"]))
                 {
                     retryCount = int.Parse(Configuration["EventBusRetryCount"]);
@@ -222,7 +225,7 @@ public static class CustomExtensionMethods
 {
     public static IServiceCollection AddCustomHealthCheck(this IServiceCollection services, IConfiguration configuration)
     {
-        var hcBuilder = services.AddHealthChecks();
+        IHealthChecksBuilder hcBuilder = services.AddHealthChecks();
 
         hcBuilder.AddCheck("self", () => HealthCheckResult.Healthy());
 

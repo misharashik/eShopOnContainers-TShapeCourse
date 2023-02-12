@@ -1,4 +1,6 @@
-﻿namespace Microsoft.eShopOnContainers.Services.Ordering.API.Application.DomainEventHandlers.OrderShipped;
+﻿using Microsoft.eShopOnContainers.Domain.Common.IntegrationEvents;
+
+namespace Microsoft.eShopOnContainers.Services.Ordering.API.Application.DomainEventHandlers.OrderShipped;
 
 public class OrderShippedDomainEventHandler
                 : INotificationHandler<OrderShippedDomainEvent>
@@ -26,10 +28,10 @@ public class OrderShippedDomainEventHandler
             .LogTrace("Order with Id: {OrderId} has been successfully updated to status {Status} ({Id})",
                 orderShippedDomainEvent.Order.Id, nameof(OrderStatus.Shipped), OrderStatus.Shipped.Id);
 
-        var order = await _orderRepository.GetAsync(orderShippedDomainEvent.Order.Id);
-        var buyer = await _buyerRepository.FindByIdAsync(order.GetBuyerId.Value.ToString());
+        Domain.AggregatesModel.OrderAggregate.Order order = await _orderRepository.GetAsync(orderShippedDomainEvent.Order.Id);
+        Buyer buyer = await _buyerRepository.FindByIdAsync(order.GetBuyerId.Value.ToString());
 
-        var orderStatusChangedToShippedIntegrationEvent = new OrderStatusChangedToShippedIntegrationEvent(order.Id, order.OrderStatus.Name, buyer.Name);
+        OrderStatusChangedToShippedIntegrationEvent orderStatusChangedToShippedIntegrationEvent = new OrderStatusChangedToShippedIntegrationEvent(order.Id, order.OrderStatus.Name, buyer.Name);
         await _orderingIntegrationEventService.AddAndSaveEventAsync(orderStatusChangedToShippedIntegrationEvent);
     }
 }

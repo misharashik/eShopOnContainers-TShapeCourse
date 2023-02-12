@@ -1,10 +1,11 @@
-﻿using System.Threading.Tasks;
-using Coupon.API.Infrastructure.Repositories;
+﻿using Coupon.API.Infrastructure.Repositories;
 using Coupon.API.IntegrationEvents.Events;
 using Microsoft.eShopOnContainers.BuildingBlocks.EventBus.Abstractions;
 using Microsoft.eShopOnContainers.BuildingBlocks.EventBus.Events;
+using Microsoft.eShopOnContainers.Domain.Common.IntegrationEvents;
 using Serilog;
 using Serilog.Context;
+using System.Threading.Tasks;
 
 namespace Coupon.API.IntegrationEvents.EventHandlers
 {
@@ -13,7 +14,9 @@ namespace Coupon.API.IntegrationEvents.EventHandlers
         private readonly ICouponRepository _couponRepository;
         private readonly IEventBus _eventBus;
 
-        public OrderStatusChangedToAwaitingCouponValidationIntegrationEventHandler(ICouponRepository couponRepository, IEventBus eventBus)
+        public OrderStatusChangedToAwaitingCouponValidationIntegrationEventHandler(
+            ICouponRepository couponRepository,
+            IEventBus eventBus)
         {
             _couponRepository = couponRepository;
             _eventBus = eventBus;
@@ -27,7 +30,7 @@ namespace Coupon.API.IntegrationEvents.EventHandlers
             {
                 Log.Information("----- Handling integration event: {IntegrationEventId} at {AppName} - ({@IntegrationEvent})", @event.Id, "Coupon.API", @event);
 
-                var couponIntegrationEvent = await ProcessIntegrationEventAsync(@event);
+                IntegrationEvent couponIntegrationEvent = await ProcessIntegrationEventAsync(@event);
 
                 Log.Information("----- Publishing integration event: {IntegrationEventId} from {AppName} - ({@IntegrationEvent})", couponIntegrationEvent.Id, "Coupon.API", couponIntegrationEvent);
 
@@ -37,7 +40,7 @@ namespace Coupon.API.IntegrationEvents.EventHandlers
 
         private async Task<IntegrationEvent> ProcessIntegrationEventAsync(OrderStatusChangedToAwaitingCouponValidationIntegrationEvent integrationEvent)
         {
-            var coupon = await _couponRepository.FindCouponByCodeAsync(integrationEvent.Code);
+            Infrastructure.Models.Coupon coupon = await _couponRepository.FindCouponByCodeAsync(integrationEvent.Code);
 
             Log.Information("----- Coupon \"{CouponCode}\": {@Coupon}", integrationEvent.Code, coupon);
 

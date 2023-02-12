@@ -1,0 +1,30 @@
+﻿using Microsoft.eShopOnContainers.Domain.Common.IntegrationEvents;
+
+namespace Microsoft.eShopOnContainers.Services.Ordering.SignalrHub.IntegrationEvents;
+
+public class OrderStatusChangedToLoyaltyPointsProcessedEventHandler : IIntegrationEventHandler<OrderStatusChangedToLoyaltyPointsProcessedIntegrationEvent>
+{
+    private readonly IHubContext<NotificationsHub> _hubContext;
+    private readonly ILogger<OrderStatusChangedToAwaitingValidationIntegrationEventHandler> _logger;
+
+    public OrderStatusChangedToLoyaltyPointsProcessedEventHandler(
+        IHubContext<NotificationsHub> hubContext,
+        ILogger<OrderStatusChangedToAwaitingValidationIntegrationEventHandler> logger)
+    {
+        _hubContext = hubContext ?? throw new ArgumentNullException(nameof(hubContext));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    }
+
+
+    public async Task Handle(OrderStatusChangedToLoyaltyPointsProcessedIntegrationEvent @event)
+    {
+        using (LogContext.PushProperty("IntegrationEventContext", $"{@event.Id}-{Program.AppName}"))
+        {
+            _logger.LogInformation("----- Handling integration event: {IntegrationEventId} at {AppName} - ({@IntegrationEvent})", @event.Id, Program.AppName, @event);
+
+            await _hubContext.Clients
+                .Group(@event.BuyerName)
+                .SendAsync("UpdatedOrderState", new { OrderId = @event.OrderId, Status = @event.OrderStatus });
+        }
+    }
+}

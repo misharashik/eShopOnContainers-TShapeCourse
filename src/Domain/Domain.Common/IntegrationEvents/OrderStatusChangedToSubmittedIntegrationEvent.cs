@@ -1,4 +1,6 @@
-﻿namespace Microsoft.eShopOnContainers.Services.Ordering.SignalrHub.IntegrationEvents.Events;
+﻿using Microsoft.eShopOnContainers.BuildingBlocks.EventBus.Events;
+
+namespace Microsoft.eShopOnContainers.Domain.Common.IntegrationEvents;
 
 public record OrderStatusChangedToSubmittedIntegrationEvent : IntegrationEvent
 {

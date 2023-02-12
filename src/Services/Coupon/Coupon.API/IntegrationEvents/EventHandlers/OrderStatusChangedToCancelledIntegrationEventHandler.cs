@@ -1,7 +1,7 @@
-﻿using System.Threading.Tasks;
-using Coupon.API.Infrastructure.Repositories;
-using Coupon.API.IntegrationEvents.Events;
+﻿using Coupon.API.Infrastructure.Repositories;
 using Microsoft.eShopOnContainers.BuildingBlocks.EventBus.Abstractions;
+using Microsoft.eShopOnContainers.Domain.Common.IntegrationEvents;
+using System.Threading.Tasks;
 
 namespace Coupon.API.IntegrationEvents.EventHandlers
 {

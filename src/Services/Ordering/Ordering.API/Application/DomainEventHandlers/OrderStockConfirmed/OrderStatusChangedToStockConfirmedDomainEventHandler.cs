@@ -1,4 +1,6 @@
-﻿namespace Microsoft.eShopOnContainers.Services.Ordering.API.Application.DomainEventHandlers.OrderStockConfirmed;
+﻿using Microsoft.eShopOnContainers.Domain.Common.IntegrationEvents;
+
+namespace Microsoft.eShopOnContainers.Services.Ordering.API.Application.DomainEventHandlers.OrderStockConfirmed;
 
 public class OrderStatusChangedToStockConfirmedDomainEventHandler
                 : INotificationHandler<OrderStatusChangedToStockConfirmedDomainEvent>
@@ -26,10 +28,17 @@ public class OrderStatusChangedToStockConfirmedDomainEventHandler
             .LogTrace("Order with Id: {OrderId} has been successfully updated to status {Status} ({Id})",
                 orderStatusChangedToStockConfirmedDomainEvent.OrderId, nameof(OrderStatus.StockConfirmed), OrderStatus.StockConfirmed.Id);
 
-        var order = await _orderRepository.GetAsync(orderStatusChangedToStockConfirmedDomainEvent.OrderId);
-        var buyer = await _buyerRepository.FindByIdAsync(order.GetBuyerId.Value.ToString());
+        Domain.AggregatesModel.OrderAggregate.Order order = await _orderRepository.GetAsync(orderStatusChangedToStockConfirmedDomainEvent.OrderId);
+        Buyer buyer = await _buyerRepository.FindByIdAsync(order.GetBuyerId.Value.ToString());
 
-        var orderStatusChangedToStockConfirmedIntegrationEvent = new OrderStatusChangedToStockConfirmedIntegrationEvent(order.Id, order.OrderStatus.Name, buyer.Name);
+        OrderStatusChangedToStockConfirmedIntegrationEvent orderStatusChangedToStockConfirmedIntegrationEvent =
+            new OrderStatusChangedToStockConfirmedIntegrationEvent(
+                order.Id,
+                order.OrderStatus.Name,
+                order.GetBuyerId.Value,
+                buyer.Name,
+                order.GetTotal(),
+                order.LoyaltyPoints ?? 0);
         await _orderingIntegrationEventService.AddAndSaveEventAsync(orderStatusChangedToStockConfirmedIntegrationEvent);
     }
 }

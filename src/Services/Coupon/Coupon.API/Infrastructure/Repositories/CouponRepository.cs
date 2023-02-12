@@ -1,42 +1,42 @@
 ﻿namespace Coupon.API.Infrastructure.Repositories
 {
-    using System.Threading.Tasks;
     using Coupon.API.Infrastructure.Models;
     using MongoDB.Driver;
+    using System.Threading.Tasks;
 
     public class CouponRepository : ICouponRepository
     {
-        private readonly CouponContext _couponContext;
+        private readonly MongoDbContext _dbContext;
 
-        public CouponRepository(CouponContext couponContext)
+        public CouponRepository(MongoDbContext couponContext)
         {
-            _couponContext = couponContext;
+            _dbContext = couponContext;
         }
 
         public async Task UpdateCouponConsumedByCodeAsync(string code, int orderId)
         {
-            var filter = Builders<Coupon>.Filter.Eq("Code", code);
-            var update = Builders<Coupon>.Update
+            FilterDefinition<Coupon> filter = Builders<Coupon>.Filter.Eq("Code", code);
+            UpdateDefinition<Coupon> update = Builders<Coupon>.Update
                 .Set(coupon => coupon.Consumed, true)
                 .Set(coupon => coupon.OrderId, orderId);
 
-            await _couponContext.Coupons.UpdateOneAsync(filter, update, new UpdateOptions { IsUpsert = false });
+            await _dbContext.Coupons.UpdateOneAsync(filter, update, new UpdateOptions { IsUpsert = false });
         }
 
         public async Task UpdateCouponReleasedByOrderIdAsync(int orderId)
         {
-            var filter = Builders<Coupon>.Filter.Eq("OrderId", orderId);
-            var update = Builders<Coupon>.Update
+            FilterDefinition<Coupon> filter = Builders<Coupon>.Filter.Eq("OrderId", orderId);
+            UpdateDefinition<Coupon> update = Builders<Coupon>.Update
                 .Set(coupon => coupon.Consumed, false)
                 .Set(coupon => coupon.OrderId, 0);
 
-            await _couponContext.Coupons.UpdateOneAsync(filter, update, new UpdateOptions { IsUpsert = false });
+            await _dbContext.Coupons.UpdateOneAsync(filter, update, new UpdateOptions { IsUpsert = false });
         }
 
         public async Task<Coupon> FindCouponByCodeAsync(string code)
         {
-            var filter = Builders<Coupon>.Filter.Eq("Code", code);
-            return await _couponContext.Coupons.Find(filter).FirstOrDefaultAsync();
+            FilterDefinition<Coupon> filter = Builders<Coupon>.Filter.Eq("Code", code);
+            return await _dbContext.Coupons.Find(filter).FirstOrDefaultAsync();
         }
     }
 }

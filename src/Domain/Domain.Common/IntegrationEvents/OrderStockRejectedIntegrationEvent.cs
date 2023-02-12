@@ -1,4 +1,6 @@
-﻿namespace Microsoft.eShopOnContainers.Services.Ordering.API.Application.IntegrationEvents.Events;    
+﻿using Microsoft.eShopOnContainers.BuildingBlocks.EventBus.Events;
+
+namespace Microsoft.eShopOnContainers.Domain.Common.IntegrationEvents;
 
 public record OrderStockRejectedIntegrationEvent : IntegrationEvent
 {

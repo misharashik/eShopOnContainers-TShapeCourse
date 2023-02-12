@@ -1,3 +1,5 @@
+using Microsoft.eShopOnContainers.Domain.Common.IntegrationEvents;
+
 namespace Microsoft.eShopOnContainers.Payment.API;
 
 public class Startup
@@ -21,8 +23,8 @@ public class Startup
         {
             services.AddSingleton<IServiceBusPersisterConnection>(sp =>
             {
-                var serviceBusConnectionString = Configuration["EventBusConnection"];
-                var subscriptionClientName = Configuration["SubscriptionClientName"];
+                string serviceBusConnectionString = Configuration["EventBusConnection"];
+                string subscriptionClientName = Configuration["SubscriptionClientName"];
 
                 return new DefaultServiceBusPersisterConnection(serviceBusConnectionString);
             });
@@ -31,8 +33,8 @@ public class Startup
         {
             services.AddSingleton<IRabbitMQPersistentConnection>(sp =>
             {
-                var logger = sp.GetRequiredService<ILogger<DefaultRabbitMQPersistentConnection>>();
-                var factory = new ConnectionFactory()
+                ILogger<DefaultRabbitMQPersistentConnection> logger = sp.GetRequiredService<ILogger<DefaultRabbitMQPersistentConnection>>();
+                ConnectionFactory factory = new ConnectionFactory()
                 {
                     HostName = Configuration["EventBusConnection"],
                     DispatchConsumersAsync = true
@@ -48,7 +50,7 @@ public class Startup
                     factory.Password = Configuration["EventBusPassword"];
                 }
 
-                var retryCount = 5;
+                int retryCount = 5;
                 if (!string.IsNullOrEmpty(Configuration["EventBusRetryCount"]))
                 {
                     retryCount = int.Parse(Configuration["EventBusRetryCount"]);
@@ -60,7 +62,7 @@ public class Startup
 
         RegisterEventBus(services);
 
-        var container = new ContainerBuilder();
+        ContainerBuilder container = new ContainerBuilder();
         container.Populate(services);
         return new AutofacServiceProvider(container.Build());
     }
@@ -71,7 +73,7 @@ public class Startup
         //loggerFactory.AddAzureWebAppDiagnostics();
         //loggerFactory.AddApplicationInsights(app.ApplicationServices, LogLevel.Trace);
 
-        var pathBase = Configuration["PATH_BASE"];
+        string pathBase = Configuration["PATH_BASE"];
         if (!string.IsNullOrEmpty(pathBase))
         {
             app.UsePathBase(pathBase);
@@ -106,10 +108,10 @@ public class Startup
         {
             services.AddSingleton<IEventBus, EventBusServiceBus>(sp =>
             {
-                var serviceBusPersisterConnection = sp.GetRequiredService<IServiceBusPersisterConnection>();
-                var iLifetimeScope = sp.GetRequiredService<ILifetimeScope>();
-                var logger = sp.GetRequiredService<ILogger<EventBusServiceBus>>();
-                var eventBusSubcriptionsManager = sp.GetRequiredService<IEventBusSubscriptionsManager>();
+                IServiceBusPersisterConnection serviceBusPersisterConnection = sp.GetRequiredService<IServiceBusPersisterConnection>();
+                ILifetimeScope iLifetimeScope = sp.GetRequiredService<ILifetimeScope>();
+                ILogger<EventBusServiceBus> logger = sp.GetRequiredService<ILogger<EventBusServiceBus>>();
+                IEventBusSubscriptionsManager eventBusSubcriptionsManager = sp.GetRequiredService<IEventBusSubscriptionsManager>();
                 string subscriptionName = Configuration["SubscriptionClientName"];
 
                 return new EventBusServiceBus(serviceBusPersisterConnection, logger,
@@ -120,13 +122,13 @@ public class Startup
         {
             services.AddSingleton<IEventBus, EventBusRabbitMQ>(sp =>
             {
-                var subscriptionClientName = Configuration["SubscriptionClientName"];
-                var rabbitMQPersistentConnection = sp.GetRequiredService<IRabbitMQPersistentConnection>();
-                var iLifetimeScope = sp.GetRequiredService<ILifetimeScope>();
-                var logger = sp.GetRequiredService<ILogger<EventBusRabbitMQ>>();
-                var eventBusSubcriptionsManager = sp.GetRequiredService<IEventBusSubscriptionsManager>();
+                string subscriptionClientName = Configuration["SubscriptionClientName"];
+                IRabbitMQPersistentConnection rabbitMQPersistentConnection = sp.GetRequiredService<IRabbitMQPersistentConnection>();
+                ILifetimeScope iLifetimeScope = sp.GetRequiredService<ILifetimeScope>();
+                ILogger<EventBusRabbitMQ> logger = sp.GetRequiredService<ILogger<EventBusRabbitMQ>>();
+                IEventBusSubscriptionsManager eventBusSubcriptionsManager = sp.GetRequiredService<IEventBusSubscriptionsManager>();
 
-                var retryCount = 5;
+                int retryCount = 5;
                 if (!string.IsNullOrEmpty(Configuration["EventBusRetryCount"]))
                 {
                     retryCount = int.Parse(Configuration["EventBusRetryCount"]);
@@ -136,14 +138,14 @@ public class Startup
             });
         }
 
-        services.AddTransient<OrderStatusChangedToStockConfirmedIntegrationEventHandler>();
+        services.AddTransient<OrderStatusChangedToLoyaltyPointsProcessedIntegrationEventHandler>();
         services.AddSingleton<IEventBusSubscriptionsManager, InMemoryEventBusSubscriptionsManager>();
     }
 
     private void ConfigureEventBus(IApplicationBuilder app)
     {
-        var eventBus = app.ApplicationServices.GetRequiredService<IEventBus>();
-        eventBus.Subscribe<OrderStatusChangedToStockConfirmedIntegrationEvent, OrderStatusChangedToStockConfirmedIntegrationEventHandler>();
+        IEventBus eventBus = app.ApplicationServices.GetRequiredService<IEventBus>();
+        eventBus.Subscribe<OrderStatusChangedToLoyaltyPointsProcessedIntegrationEvent, OrderStatusChangedToLoyaltyPointsProcessedIntegrationEventHandler>();
     }
 }
 
@@ -151,7 +153,7 @@ public static class CustomExtensionMethods
 {
     public static IServiceCollection AddCustomHealthCheck(this IServiceCollection services, IConfiguration configuration)
     {
-        var hcBuilder = services.AddHealthChecks();
+        IHealthChecksBuilder hcBuilder = services.AddHealthChecks();
 
         hcBuilder.AddCheck("self", () => HealthCheckResult.Healthy());
 

@@ -1,3 +1,5 @@
+using Microsoft.eShopOnContainers.Domain.Common.IntegrationEvents;
+
 namespace Microsoft.eShopOnContainers.Services.Ordering.API;
 
 public class Startup
@@ -28,7 +30,7 @@ public class Startup
             .AddCustomAuthentication(Configuration);
         //configure autofac
 
-        var container = new ContainerBuilder();
+        ContainerBuilder container = new ContainerBuilder();
         container.Populate(services);
 
         container.RegisterModule(new MediatorModule());
@@ -43,7 +45,7 @@ public class Startup
         //loggerFactory.AddAzureWebAppDiagnostics();
         //loggerFactory.AddApplicationInsights(app.ApplicationServices, LogLevel.Trace);
 
-        var pathBase = Configuration["PATH_BASE"];
+        string pathBase = Configuration["PATH_BASE"];
         if (!string.IsNullOrEmpty(pathBase))
         {
             loggerFactory.CreateLogger<Startup>().LogDebug("Using PATH BASE '{pathBase}'", pathBase);
@@ -53,7 +55,7 @@ public class Startup
         app.UseSwagger()
             .UseSwaggerUI(c =>
             {
-                c.SwaggerEndpoint($"{ (!string.IsNullOrEmpty(pathBase) ? pathBase : string.Empty) }/swagger/v1/swagger.json", "Ordering.API V1");
+                c.SwaggerEndpoint($"{(!string.IsNullOrEmpty(pathBase) ? pathBase : string.Empty)}/swagger/v1/swagger.json", "Ordering.API V1");
                 c.OAuthClientId("orderingswaggerui");
                 c.OAuthAppName("Ordering Swagger UI");
             });
@@ -70,12 +72,12 @@ public class Startup
             endpoints.MapGet("/_proto/", async ctx =>
             {
                 ctx.Response.ContentType = "text/plain";
-                using var fs = new FileStream(Path.Combine(env.ContentRootPath, "Proto", "basket.proto"), FileMode.Open, FileAccess.Read);
-                using var sr = new StreamReader(fs);
+                using FileStream fs = new FileStream(Path.Combine(env.ContentRootPath, "Proto", "basket.proto"), FileMode.Open, FileAccess.Read);
+                using StreamReader sr = new StreamReader(fs);
                 while (!sr.EndOfStream)
                 {
-                    var line = await sr.ReadLineAsync();
-                    if (line != "/* >>" || line != "<< */")
+                    string line = await sr.ReadLineAsync();
+                    if (line is not "/* >>" or not "<< */")
                     {
                         await ctx.Response.WriteAsync(line);
                     }
@@ -98,12 +100,16 @@ public class Startup
 
     private void ConfigureEventBus(IApplicationBuilder app)
     {
-        var eventBus = app.ApplicationServices.GetRequiredService<BuildingBlocks.EventBus.Abstractions.IEventBus>();
+        IEventBus eventBus = app.ApplicationServices.GetRequiredService<BuildingBlocks.EventBus.Abstractions.IEventBus>();
 
         eventBus.Subscribe<UserCheckoutAcceptedIntegrationEvent, IIntegrationEventHandler<UserCheckoutAcceptedIntegrationEvent>>();
         eventBus.Subscribe<GracePeriodConfirmedIntegrationEvent, IIntegrationEventHandler<GracePeriodConfirmedIntegrationEvent>>();
         eventBus.Subscribe<OrderStockConfirmedIntegrationEvent, IIntegrationEventHandler<OrderStockConfirmedIntegrationEvent>>();
         eventBus.Subscribe<OrderStockRejectedIntegrationEvent, IIntegrationEventHandler<OrderStockRejectedIntegrationEvent>>();
+
+        eventBus.Subscribe<OrderLoyaltyPointsProcessisngFailedIntegrationEvent, IIntegrationEventHandler<OrderLoyaltyPointsProcessisngFailedIntegrationEvent>>();
+        eventBus.Subscribe<OrderLoyaltyPointsProcessisngSucceededIntegrationEvent, IIntegrationEventHandler<OrderLoyaltyPointsProcessisngSucceededIntegrationEvent>>();
+
         eventBus.Subscribe<OrderPaymentFailedIntegrationEvent, IIntegrationEventHandler<OrderPaymentFailedIntegrationEvent>>();
         eventBus.Subscribe<OrderPaymentSucceededIntegrationEvent, IIntegrationEventHandler<OrderPaymentSucceededIntegrationEvent>>();
     }
@@ -151,7 +157,7 @@ static class CustomExtensionsMethods
 
     public static IServiceCollection AddHealthChecks(this IServiceCollection services, IConfiguration configuration)
     {
-        var hcBuilder = services.AddHealthChecks();
+        IHealthChecksBuilder hcBuilder = services.AddHealthChecks();
 
         hcBuilder.AddCheck("self", () => HealthCheckResult.Healthy());
 
@@ -213,7 +219,7 @@ static class CustomExtensionsMethods
     public static IServiceCollection AddCustomSwagger(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddSwaggerGen(options =>
-        {            
+        {
             options.SwaggerDoc("v1", new OpenApiInfo
             {
                 Title = "eShopOnContainers - Ordering HTTP API",
@@ -256,9 +262,9 @@ static class CustomExtensionsMethods
         {
             services.AddSingleton<IServiceBusPersisterConnection>(sp =>
             {
-                var serviceBusConnectionString = configuration["EventBusConnection"];
+                string serviceBusConnectionString = configuration["EventBusConnection"];
 
-                var subscriptionClientName = configuration["SubscriptionClientName"];
+                string subscriptionClientName = configuration["SubscriptionClientName"];
 
                 return new DefaultServiceBusPersisterConnection(serviceBusConnectionString);
             });
@@ -267,10 +273,10 @@ static class CustomExtensionsMethods
         {
             services.AddSingleton<IRabbitMQPersistentConnection>(sp =>
             {
-                var logger = sp.GetRequiredService<ILogger<DefaultRabbitMQPersistentConnection>>();
+                ILogger<DefaultRabbitMQPersistentConnection> logger = sp.GetRequiredService<ILogger<DefaultRabbitMQPersistentConnection>>();
 
 
-                var factory = new ConnectionFactory()
+                ConnectionFactory factory = new ConnectionFactory()
                 {
                     HostName = configuration["EventBusConnection"],
                     DispatchConsumersAsync = true
@@ -286,7 +292,7 @@ static class CustomExtensionsMethods
                     factory.Password = configuration["EventBusPassword"];
                 }
 
-                var retryCount = 5;
+                int retryCount = 5;
                 if (!string.IsNullOrEmpty(configuration["EventBusRetryCount"]))
                 {
                     retryCount = int.Parse(configuration["EventBusRetryCount"]);
@@ -307,7 +313,7 @@ static class CustomExtensionsMethods
         {
             options.InvalidModelStateResponseFactory = context =>
             {
-                var problemDetails = new ValidationProblemDetails(context.ModelState)
+                ValidationProblemDetails problemDetails = new ValidationProblemDetails(context.ModelState)
                 {
                     Instance = context.HttpContext.Request.Path,
                     Status = StatusCodes.Status400BadRequest,
@@ -330,10 +336,10 @@ static class CustomExtensionsMethods
         {
             services.AddSingleton<IEventBus, EventBusServiceBus>(sp =>
             {
-                var serviceBusPersisterConnection = sp.GetRequiredService<IServiceBusPersisterConnection>();
-                var iLifetimeScope = sp.GetRequiredService<ILifetimeScope>();
-                var logger = sp.GetRequiredService<ILogger<EventBusServiceBus>>();
-                var eventBusSubcriptionsManager = sp.GetRequiredService<IEventBusSubscriptionsManager>();
+                IServiceBusPersisterConnection serviceBusPersisterConnection = sp.GetRequiredService<IServiceBusPersisterConnection>();
+                ILifetimeScope iLifetimeScope = sp.GetRequiredService<ILifetimeScope>();
+                ILogger<EventBusServiceBus> logger = sp.GetRequiredService<ILogger<EventBusServiceBus>>();
+                IEventBusSubscriptionsManager eventBusSubcriptionsManager = sp.GetRequiredService<IEventBusSubscriptionsManager>();
                 string subscriptionName = configuration["SubscriptionClientName"];
 
                 return new EventBusServiceBus(serviceBusPersisterConnection, logger,
@@ -344,13 +350,13 @@ static class CustomExtensionsMethods
         {
             services.AddSingleton<IEventBus, EventBusRabbitMQ>(sp =>
             {
-                var subscriptionClientName = configuration["SubscriptionClientName"];
-                var rabbitMQPersistentConnection = sp.GetRequiredService<IRabbitMQPersistentConnection>();
-                var iLifetimeScope = sp.GetRequiredService<ILifetimeScope>();
-                var logger = sp.GetRequiredService<ILogger<EventBusRabbitMQ>>();
-                var eventBusSubcriptionsManager = sp.GetRequiredService<IEventBusSubscriptionsManager>();
+                string subscriptionClientName = configuration["SubscriptionClientName"];
+                IRabbitMQPersistentConnection rabbitMQPersistentConnection = sp.GetRequiredService<IRabbitMQPersistentConnection>();
+                ILifetimeScope iLifetimeScope = sp.GetRequiredService<ILifetimeScope>();
+                ILogger<EventBusRabbitMQ> logger = sp.GetRequiredService<ILogger<EventBusRabbitMQ>>();
+                IEventBusSubscriptionsManager eventBusSubcriptionsManager = sp.GetRequiredService<IEventBusSubscriptionsManager>();
 
-                var retryCount = 5;
+                int retryCount = 5;
                 if (!string.IsNullOrEmpty(configuration["EventBusRetryCount"]))
                 {
                     retryCount = int.Parse(configuration["EventBusRetryCount"]);
@@ -370,7 +376,7 @@ static class CustomExtensionsMethods
         // prevent from mapping "sub" claim to nameidentifier.
         JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Remove("sub");
 
-        var identityUrl = configuration.GetValue<string>("IdentityUrl");
+        string identityUrl = configuration.GetValue<string>("IdentityUrl");
 
         services.AddAuthentication(options =>
         {

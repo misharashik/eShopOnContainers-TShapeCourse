@@ -1,5 +1,7 @@
-﻿namespace Microsoft.eShopOnContainers.Services.Ordering.API.Application.DomainEventHandlers.OrderPaid;
-    
+﻿using Microsoft.eShopOnContainers.Domain.Common.IntegrationEvents;
+
+namespace Microsoft.eShopOnContainers.Services.Ordering.API.Application.DomainEventHandlers.OrderPaid;
+
 public class OrderStatusChangedToPaidDomainEventHandler
                 : INotificationHandler<OrderStatusChangedToPaidDomainEvent>
 {
@@ -27,13 +29,13 @@ public class OrderStatusChangedToPaidDomainEventHandler
             .LogTrace("Order with Id: {OrderId} has been successfully updated to status {Status} ({Id})",
                 orderStatusChangedToPaidDomainEvent.OrderId, nameof(OrderStatus.Paid), OrderStatus.Paid.Id);
 
-        var order = await _orderRepository.GetAsync(orderStatusChangedToPaidDomainEvent.OrderId);
-        var buyer = await _buyerRepository.FindByIdAsync(order.GetBuyerId.Value.ToString());
+        Domain.AggregatesModel.OrderAggregate.Order order = await _orderRepository.GetAsync(orderStatusChangedToPaidDomainEvent.OrderId);
+        Buyer buyer = await _buyerRepository.FindByIdAsync(order.GetBuyerId.Value.ToString());
 
-        var orderStockList = orderStatusChangedToPaidDomainEvent.OrderItems
+        IEnumerable<OrderStockItem> orderStockList = orderStatusChangedToPaidDomainEvent.OrderItems
             .Select(orderItem => new OrderStockItem(orderItem.ProductId, orderItem.GetUnits()));
 
-        var orderStatusChangedToPaidIntegrationEvent = new OrderStatusChangedToPaidIntegrationEvent(
+        OrderStatusChangedToPaidIntegrationEvent orderStatusChangedToPaidIntegrationEvent = new OrderStatusChangedToPaidIntegrationEvent(
             orderStatusChangedToPaidDomainEvent.OrderId,
             order.OrderStatus.Name,
             buyer.Name,

@@ -8,6 +8,7 @@ EXPOSE 443
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /src
 
+COPY ["src/Domain/Domain.Common/Domain.Common.csproj", "src/Domain/Domain.Common/"]
 COPY ["src/Services/Coupon/Coupon.API/Coupon.API.csproj", "src/Services/Coupon/Coupon.API/"]
 COPY ["src/BuildingBlocks/EventBus/EventBusRabbitMQ/EventBusRabbitMQ.csproj", "src/BuildingBlocks/EventBus/EventBusRabbitMQ/"]
 COPY ["src/BuildingBlocks/EventBus/EventBus/EventBus.csproj", "src/BuildingBlocks/EventBus/EventBus/"]

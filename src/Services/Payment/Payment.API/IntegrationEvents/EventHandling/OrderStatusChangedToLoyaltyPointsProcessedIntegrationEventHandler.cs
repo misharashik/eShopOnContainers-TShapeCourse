@@ -1,16 +1,18 @@
-﻿namespace Microsoft.eShopOnContainers.Payment.API.IntegrationEvents.EventHandling;
-    
-public class OrderStatusChangedToStockConfirmedIntegrationEventHandler :
-    IIntegrationEventHandler<OrderStatusChangedToStockConfirmedIntegrationEvent>
+﻿using Microsoft.eShopOnContainers.Domain.Common.IntegrationEvents;
+
+namespace Microsoft.eShopOnContainers.Payment.API.IntegrationEvents.EventHandling;
+
+public class OrderStatusChangedToLoyaltyPointsProcessedIntegrationEventHandler :
+    IIntegrationEventHandler<OrderStatusChangedToLoyaltyPointsProcessedIntegrationEvent>
 {
     private readonly IEventBus _eventBus;
     private readonly PaymentSettings _settings;
-    private readonly ILogger<OrderStatusChangedToStockConfirmedIntegrationEventHandler> _logger;
+    private readonly ILogger<OrderStatusChangedToLoyaltyPointsProcessedIntegrationEventHandler> _logger;
 
-    public OrderStatusChangedToStockConfirmedIntegrationEventHandler(
+    public OrderStatusChangedToLoyaltyPointsProcessedIntegrationEventHandler(
         IEventBus eventBus,
         IOptionsSnapshot<PaymentSettings> settings,
-        ILogger<OrderStatusChangedToStockConfirmedIntegrationEventHandler> logger)
+        ILogger<OrderStatusChangedToLoyaltyPointsProcessedIntegrationEventHandler> logger)
     {
         _eventBus = eventBus;
         _settings = settings.Value;
@@ -19,7 +21,7 @@ public class OrderStatusChangedToStockConfirmedIntegrationEventHandler :
         _logger.LogTrace("PaymentSettings: {@PaymentSettings}", _settings);
     }
 
-    public async Task Handle(OrderStatusChangedToStockConfirmedIntegrationEvent @event)
+    public async Task Handle(OrderStatusChangedToLoyaltyPointsProcessedIntegrationEvent @event)
     {
         using (LogContext.PushProperty("IntegrationEventContext", $"{@event.Id}-{Program.AppName}"))
         {

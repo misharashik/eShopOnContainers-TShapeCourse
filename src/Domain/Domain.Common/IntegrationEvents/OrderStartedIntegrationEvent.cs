@@ -1,4 +1,6 @@
-﻿namespace Microsoft.eShopOnContainers.Services.Ordering.API.Application.IntegrationEvents.Events;
+﻿using Microsoft.eShopOnContainers.BuildingBlocks.EventBus.Events;
+
+namespace Microsoft.eShopOnContainers.Domain.Common.IntegrationEvents;
 
 // Integration Events notes:
 // An Event is “something that has happened in the past”, therefore its name has to be
@@ -8,5 +10,7 @@ public record OrderStartedIntegrationEvent : IntegrationEvent
     public string UserId { get; init; }
 
     public OrderStartedIntegrationEvent(string userId)
-        => UserId = userId;
+    {
+        UserId = userId;
+    }
 }

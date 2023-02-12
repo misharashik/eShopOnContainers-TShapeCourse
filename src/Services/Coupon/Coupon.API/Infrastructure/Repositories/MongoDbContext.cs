@@ -4,13 +4,13 @@
     using Microsoft.Extensions.Options;
     using MongoDB.Driver;
 
-    public class CouponContext
+    public class MongoDbContext
     {
         private readonly IMongoDatabase _database = null;
 
-        public CouponContext(IOptions<CouponSettings> settings)
+        public MongoDbContext(IOptions<CouponSettings> settings)
         {
-            var client = new MongoClient(settings.Value.ConnectionString);
+            MongoClient client = new MongoClient(settings.Value.ConnectionString);
 
             if (client is null)
             {
@@ -21,5 +21,6 @@
         }
 
         public IMongoCollection<Coupon> Coupons => _database.GetCollection<Coupon>("CouponCollection");
+        public IMongoCollection<LoyaltyCard> LoyaltyCards => _database.GetCollection<LoyaltyCard>("LoyaltyCardCollection");
     }
 }

@@ -1,4 +1,6 @@
-﻿namespace Microsoft.eShopOnContainers.BuildingBlocks.IntegrationEventLogEF.Services;
+﻿using Microsoft.eShopOnContainers.Domain.Common.IntegrationEvents;
+
+namespace Microsoft.eShopOnContainers.BuildingBlocks.IntegrationEventLogEF.Services;
 
 public class IntegrationEventLogService : IIntegrationEventLogService, IDisposable
 {
@@ -15,17 +17,23 @@ public class IntegrationEventLogService : IIntegrationEventLogService, IDisposab
                 .UseSqlServer(_dbConnection)
                 .Options);
 
-        _eventTypes = Assembly.Load(Assembly.GetEntryAssembly().FullName)
+        _eventTypes =
+            Assembly.Load(Assembly.GetEntryAssembly().FullName)
             .GetTypes()
             .Where(t => t.Name.EndsWith(nameof(IntegrationEvent)))
+            .Union(
+                Assembly.Load(Assembly.GetAssembly(typeof(OrderStartedIntegrationEvent)).FullName)
+                .GetTypes()
+                .Where(t => t.Name.EndsWith(nameof(IntegrationEvent)))
+            )
             .ToList();
     }
 
     public async Task<IEnumerable<IntegrationEventLogEntry>> RetrieveEventLogsPendingToPublishAsync(Guid transactionId)
     {
-        var tid = transactionId.ToString();
+        string tid = transactionId.ToString();
 
-        var result = await _integrationEventLogContext.IntegrationEventLogs
+        List<IntegrationEventLogEntry> result = await _integrationEventLogContext.IntegrationEventLogs
             .Where(e => e.TransactionId == tid && e.State == EventStateEnum.NotPublished).ToListAsync();
 
         if (result.Any())
@@ -39,9 +47,12 @@ public class IntegrationEventLogService : IIntegrationEventLogService, IDisposab
 
     public Task SaveEventAsync(IntegrationEvent @event, IDbContextTransaction transaction)
     {
-        if (transaction == null) throw new ArgumentNullException(nameof(transaction));
+        if (transaction == null)
+        {
+            throw new ArgumentNullException(nameof(transaction));
+        }
 
-        var eventLogEntry = new IntegrationEventLogEntry(@event, transaction.TransactionId);
+        IntegrationEventLogEntry eventLogEntry = new IntegrationEventLogEntry(@event, transaction.TransactionId);
 
         _integrationEventLogContext.Database.UseTransaction(transaction.GetDbTransaction());
         _integrationEventLogContext.IntegrationEventLogs.Add(eventLogEntry);
@@ -66,11 +77,13 @@ public class IntegrationEventLogService : IIntegrationEventLogService, IDisposab
 
     private Task UpdateEventStatus(Guid eventId, EventStateEnum status)
     {
-        var eventLogEntry = _integrationEventLogContext.IntegrationEventLogs.Single(ie => ie.EventId == eventId);
+        IntegrationEventLogEntry eventLogEntry = _integrationEventLogContext.IntegrationEventLogs.Single(ie => ie.EventId == eventId);
         eventLogEntry.State = status;
 
         if (status == EventStateEnum.InProgress)
+        {
             eventLogEntry.TimesSent++;
+        }
 
         _integrationEventLogContext.IntegrationEventLogs.Update(eventLogEntry);
 

@@ -1,6 +1,4 @@
-﻿using Microsoft.eShopOnContainers.Services.Ordering.Domain.Events;
-
-namespace Microsoft.eShopOnContainers.Services.Ordering.Domain.AggregatesModel.OrderAggregate;
+﻿namespace Microsoft.eShopOnContainers.Services.Ordering.Domain.AggregatesModel.OrderAggregate;
 
 public class Order
     : Entity, IAggregateRoot
@@ -8,7 +6,7 @@ public class Order
     // DDD Patterns comment
     // Using private fields, allowed since EF Core 1.1, is a much better encapsulation
     // aligned with DDD Aggregates and Domain Entities (Instead of properties and property collections)
-    private DateTime _orderDate;
+    private readonly DateTime _orderDate;
 
     // Address is a Value Object pattern example persisted as EF Core 2.0 owned entity
     public Address Address { get; private set; }
@@ -21,7 +19,8 @@ public class Order
 
     private string _description;
 
-
+    public decimal? LoyaltyPoints => _loyaltyPoints;
+    private decimal? _loyaltyPoints;
 
     // Draft orders have this set to true. Currently we don't check anywhere the draft status of an Order, but we could do it if needed
     private bool _isDraft;
@@ -37,8 +36,10 @@ public class Order
 
     public static Order NewDraft()
     {
-        var order = new Order();
-        order._isDraft = true;
+        Order order = new Order
+        {
+            _isDraft = true
+        };
         return order;
     }
 
@@ -69,7 +70,7 @@ public class Order
     // in order to maintain consistency between the whole Aggregate. 
     public void AddOrderItem(int productId, string productName, decimal unitPrice, decimal discount, string pictureUrl, int units = 1)
     {
-        var existingOrderForProduct = _orderItems.Where(o => o.ProductId == productId)
+        OrderItem existingOrderForProduct = _orderItems.Where(o => o.ProductId == productId)
             .SingleOrDefault();
 
         if (existingOrderForProduct != null)
@@ -87,7 +88,7 @@ public class Order
         {
             //add validated new order item
 
-            var orderItem = new OrderItem(productId, productName, unitPrice, discount, pictureUrl, units);
+            OrderItem orderItem = new OrderItem(productId, productName, unitPrice, discount, pictureUrl, units);
             _orderItems.Add(orderItem);
         }
     }
@@ -121,6 +122,18 @@ public class Order
             _description = "All the items were confirmed with available stock.";
         }
     }
+
+    public void SetLoyaltyPointsProcessedStatus()
+    {
+        if (_orderStatusId == OrderStatus.StockConfirmed.Id)
+        {
+            AddDomainEvent(new OrderStatusChangedToLoyaltyPointsProcessedDomainEvent(Id));
+
+            _orderStatusId = OrderStatus.LoyaltyPointsProcessed.Id;
+            _description = $"The Order loyalty points were processed. Credit:{_loyaltyPoints} Debit: {GetTotal()}";
+        }
+    }
+
 
     public void SetPaidStatus()
     {
@@ -164,11 +177,11 @@ public class Order
         {
             _orderStatusId = OrderStatus.Cancelled.Id;
 
-            var itemsStockRejectedProductNames = OrderItems
+            IEnumerable<string> itemsStockRejectedProductNames = OrderItems
                 .Where(c => orderStockRejectedItems.Contains(c.ProductId))
                 .Select(c => c.GetOrderItemProductName());
 
-            var itemsStockRejectedDescription = string.Join(", ", itemsStockRejectedProductNames);
+            string itemsStockRejectedDescription = string.Join(", ", itemsStockRejectedProductNames);
             _description = $"The product items don't have stock: ({itemsStockRejectedDescription}).";
         }
     }
@@ -176,7 +189,7 @@ public class Order
     private void AddOrderStartedDomainEvent(string userId, string userName, int cardTypeId, string cardNumber,
             string cardSecurityNumber, string cardHolderName, DateTime cardExpiration)
     {
-        var orderStartedDomainEvent = new OrderStartedDomainEvent(this, userId, userName, cardTypeId,
+        OrderStartedDomainEvent orderStartedDomainEvent = new OrderStartedDomainEvent(this, userId, userName, cardTypeId,
                                                                     cardNumber, cardSecurityNumber,
                                                                     cardHolderName, cardExpiration);
 
@@ -191,5 +204,10 @@ public class Order
     public decimal GetTotal()
     {
         return _orderItems.Sum(o => o.GetUnits() * o.GetUnitPrice());
+    }
+
+    public void SetLoyaltyPoints(decimal loyaltyPoints)
+    {
+        _loyaltyPoints = Math.Max(GetTotal() * 100 /*TODO: loyaltyPoints rate*/, loyaltyPoints);
     }
 }

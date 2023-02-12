@@ -1,4 +1,6 @@
-﻿namespace Microsoft.eShopOnContainers.Services.Ordering.API.Application.IntegrationEvents.EventHandling;
+﻿using Microsoft.eShopOnContainers.Domain.Common.IntegrationEvents;
+
+namespace Microsoft.eShopOnContainers.Services.Ordering.API.Application.IntegrationEvents.EventHandling;
 public class OrderStockRejectedIntegrationEventHandler : IIntegrationEventHandler<OrderStockRejectedIntegrationEvent>
 {
     private readonly IMediator _mediator;
@@ -18,12 +20,12 @@ public class OrderStockRejectedIntegrationEventHandler : IIntegrationEventHandle
         {
             _logger.LogInformation("----- Handling integration event: {IntegrationEventId} at {AppName} - ({@IntegrationEvent})", @event.Id, Program.AppName, @event);
 
-            var orderStockRejectedItems = @event.OrderStockItems
+            List<int> orderStockRejectedItems = @event.OrderStockItems
                 .FindAll(c => !c.HasStock)
                 .Select(c => c.ProductId)
                 .ToList();
 
-            var command = new SetStockRejectedOrderStatusCommand(@event.OrderId, orderStockRejectedItems);
+            SetStockRejectedOrderStatusCommand command = new SetStockRejectedOrderStatusCommand(@event.OrderId, orderStockRejectedItems);
 
             _logger.LogInformation(
                 "----- Sending command: {CommandName} - {IdProperty}: {CommandId} ({@Command})",

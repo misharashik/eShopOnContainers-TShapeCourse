@@ -23,9 +23,9 @@ public class OrderingIntegrationEventService : IOrderingIntegrationEventService
 
     public async Task PublishEventsThroughEventBusAsync(Guid transactionId)
     {
-        var pendingLogEvents = await _eventLogService.RetrieveEventLogsPendingToPublishAsync(transactionId);
+        IEnumerable<IntegrationEventLogEntry> pendingLogEvents = await _eventLogService.RetrieveEventLogsPendingToPublishAsync(transactionId);
 
-        foreach (var logEvt in pendingLogEvents)
+        foreach (IntegrationEventLogEntry logEvt in pendingLogEvents)
         {
             _logger.LogInformation("----- Publishing integration event: {IntegrationEventId} from {AppName} - ({@IntegrationEvent})", logEvt.EventId, Program.AppName, logEvt.IntegrationEvent);
 

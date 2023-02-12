@@ -1,4 +1,4 @@
-﻿using Microsoft.eShopOnContainers.Services.Ordering.Domain.Events;
+﻿using Microsoft.eShopOnContainers.Domain.Common.IntegrationEvents;
 
 namespace Microsoft.eShopOnContainers.Services.Ordering.API.Application.DomainEventHandlers.OrderCancelled;
 
@@ -28,10 +28,14 @@ public class OrderCancelledDomainEventHandler
             .LogTrace("Order with Id: {OrderId} has been successfully updated to status {Status} ({Id})",
                 orderCancelledDomainEvent.Order.Id, nameof(OrderStatus.Cancelled), OrderStatus.Cancelled.Id);
 
-        var order = await _orderRepository.GetAsync(orderCancelledDomainEvent.Order.Id);
-        var buyer = await _buyerRepository.FindByIdAsync(order.GetBuyerId.Value.ToString());
+        Domain.AggregatesModel.OrderAggregate.Order order = await _orderRepository.GetAsync(orderCancelledDomainEvent.Order.Id);
+        Buyer buyer = await _buyerRepository.FindByIdAsync(order.GetBuyerId.Value.ToString());
 
-        var orderStatusChangedToCancelledIntegrationEvent = new OrderStatusChangedToCancelledIntegrationEvent(order.Id, order.OrderStatus.Name, buyer.Name);
+        OrderStatusChangedToCancelledIntegrationEvent orderStatusChangedToCancelledIntegrationEvent =
+            new OrderStatusChangedToCancelledIntegrationEvent(
+                order.Id, order.OrderStatus.Name, buyer.IdentityGuid, buyer.Name, "NO_DISCOUNT", 0, order.GetTotal());
+        //TODO: Add discount code and loyalty point debit
+
         await _orderingIntegrationEventService.AddAndSaveEventAsync(orderStatusChangedToCancelledIntegrationEvent);
     }
 }

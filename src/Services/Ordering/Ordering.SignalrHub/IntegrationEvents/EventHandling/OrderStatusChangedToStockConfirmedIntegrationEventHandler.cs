@@ -1,7 +1,8 @@
-﻿namespace Microsoft.eShopOnContainers.Services.Ordering.SignalrHub.IntegrationEvents.EventHandling;
+﻿using Microsoft.eShopOnContainers.Domain.Common.IntegrationEvents;
 
-public class OrderStatusChangedToStockConfirmedIntegrationEventHandler :
-    IIntegrationEventHandler<OrderStatusChangedToStockConfirmedIntegrationEvent>
+namespace Microsoft.eShopOnContainers.Services.Ordering.SignalrHub.IntegrationEvents.EventHandling;
+
+public class OrderStatusChangedToStockConfirmedIntegrationEventHandler : IIntegrationEventHandler<OrderStatusChangedToStockConfirmedIntegrationEvent>
 {
     private readonly IHubContext<NotificationsHub> _hubContext;
     private readonly ILogger<OrderStatusChangedToStockConfirmedIntegrationEventHandler> _logger;
